@@ -1,43 +1,49 @@
-import csv
-import os
-import shutil
-import uuid
 import zipfile
 from io import BytesIO
-from pathlib import Path
 
+import aiofiles
+from aiofiles import os
 from fastapi.responses import StreamingResponse
+from pytube import YouTube
 
 
-def yolo_processing(file_path: str):
-    root_path = Path(__file__).parent.parent
-    random_name = str(uuid.uuid4())
-    video_path = Path.joinpath(root_path, f"result/video/{random_name}.mp4")
-    csv_path = Path.joinpath(root_path, f"result/csv/{random_name}.csv")
+async def yolo_processing(file_path: str):
+    # Video process
+    async with aiofiles.tempfile.NamedTemporaryFile("wb", delete=False) as temp_video:
+        async with aiofiles.open(file_path, mode="rb") as file:
+            contents = await file.read()
+            await temp_video.write(contents)
 
-    shutil.copy(file_path, video_path)
+    # CSV process
+    async with aiofiles.tempfile.NamedTemporaryFile("w", delete=False) as temp_csv:
+        await temp_csv.write("0.56, Stop\n")
+        await temp_csv.write("3.23, Speed limit\n")
 
-    with open(csv_path, 'w', newline='') as file:
-        writer = csv.writer(file)
+    zip_result = zipfiles(temp_video.name, temp_csv.name)
+    await os.remove(temp_video.name)
+    await os.remove(temp_csv.name)
 
-        writer.writerow(["00:01:12.123", "Stop"])
-        writer.writerow(["00:01:46.567", "Speed limit"])
-
-    filenames = [video_path, csv_path]
-    print(filenames)
-
-    return zipfiles(filenames)
+    return zip_result
 
 
-def zipfiles(filenames):
+def zipfiles(f_video: str, f_csv: str):
     zip_io = BytesIO()
-    with zipfile.ZipFile(zip_io, mode='w', compression=zipfile.ZIP_DEFLATED) as temp_zip:
-        for fpath in filenames:
-            fdir, fname = os.path.split(fpath)
-            temp_zip.write(fpath, fname)
+    with zipfile.ZipFile(zip_io, mode="w", compression=zipfile.ZIP_DEFLATED) as temp_zip:
+        temp_zip.write(f_video, "video.mp4")
+        temp_zip.write(f_csv, "data.csv")
 
     return StreamingResponse(
         iter([zip_io.getvalue()]),
         media_type="application/x-zip-compressed",
-        headers={"Content-Disposition": f"attachment; filename=result.zip"}
+        headers={"Content-Disposition": "attachment; filename=result.zip"},
     )
+
+
+async def yt_download_tmp(yt_url: str) -> str:
+    yt = YouTube(yt_url)
+    video_buffer = BytesIO()
+    yt.streams.filter(file_extension="mp4").get_highest_resolution().stream_to_buffer(video_buffer)
+    async with aiofiles.tempfile.NamedTemporaryFile("wb", delete=False) as temp:
+        await temp.write(video_buffer.getbuffer())
+
+    return temp.name

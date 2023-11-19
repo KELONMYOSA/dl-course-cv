@@ -23,6 +23,7 @@ const MainComponent = () => {
     const [modalIsOpen, setModalIsOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [videoFile, setVideoFile] = useState(null);
+    const [loading, setLoading] = useState(false);
 
     const handleFileChange = (event) => {
         setFile(event.target.files[0]);
@@ -34,30 +35,38 @@ const MainComponent = () => {
 
     const handleUpload = async () => {
         try {
+            setLoading(true);
+            let response = null
+
             if (file) {
                 const formData = new FormData();
                 formData.append('file', file);
 
-                const response = await fetch(process.env.REACT_APP_FILE_UPLOAD_ENDPOINT, {
+                response = await fetch(process.env.REACT_APP_FILE_UPLOAD_ENDPOINT, {
                     method: 'POST',
                     body: formData,
                 });
-
-                const blob = await response.blob();
-                setVideoFile(blob);
             } else if (youtubeLink) {
-                const response = await fetch(process.env.REACT_APP_YOUTUBE_ENDPOINT, {
-                    method: 'POST',
-                    body: youtubeLink,
+                response = await fetch(process.env.REACT_APP_YOUTUBE_ENDPOINT + '?yt_url=' + youtubeLink, {
+                    method: 'POST'
                 });
+            }
 
+            if (response.ok) {
                 const blob = await response.blob();
                 setVideoFile(blob);
+            } else {
+                const error_msg = JSON.parse(JSON.stringify(await response.json())).detail;
+                console.error('Error:', error_msg);
+                setErrorMessage(error_msg);
+                setModalIsOpen(true);
             }
+            setLoading(false);
         } catch (error) {
             console.error('Error:', error);
             setErrorMessage('Failed to upload video. Please try again.');
             setModalIsOpen(true);
+            setLoading(false);
         }
     };
 
@@ -73,6 +82,12 @@ const MainComponent = () => {
 
     return (
         <>
+            {loading && (
+                <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-lg font-semibold text-white bg-gray-800 p-4 rounded-md">
+                    Loading...
+                </div>
+            )}
+
             {videoFile ? (
                 <div className="mx-auto w-3/4 xl:w-1/2">
                     <button

@@ -1,5 +1,6 @@
 import uvicorn
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from src.routers import router
 
@@ -15,13 +16,19 @@ tags_metadata = [
 app = FastAPI(
     title="CV - DL course",
     description="CV - DL course project",
-    contact={
-        "name": "KELONMYOSA",
-        "url": "https://github.com/KELONMYOSA"
-    },
+    contact={"name": "KELONMYOSA", "url": "https://github.com/KELONMYOSA"},
     version="0.0.1",
     docs_url="/docs",
-    redoc_url="/docs/redoc"
+    redoc_url="/docs/redoc",
+)
+
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Include routers
