@@ -36,6 +36,6 @@ app.include_router(router)
 
 # Start the uvicorn ASGI server with the specified parameters
 if __name__ == "__main__":
-    host = "127.0.0.1"
+    host = "0.0.0.0"
     port = 8080
     uvicorn.run(app, host=host, port=port)
