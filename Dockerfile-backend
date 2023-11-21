@@ -1,4 +1,4 @@
-FROM python:alpine
+FROM ultralytics/ultralytics:latest-python
 
 RUN pip install poetry
 

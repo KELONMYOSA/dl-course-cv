@@ -54,7 +54,7 @@ const VideoPlayer = ({ zipFile }) => {
                 const zip = new JSZip();
                 const zipData = await zip.loadAsync(zipFile);
 
-                const mp4File = await zipData.file('video.mp4').async('blob');
+                const videoFile = await zipData.file('video.webm').async('blob');
                 const csvFile = await zipData.file('data.csv').async('text');
 
                 const lines = csvFile.split('\n');
@@ -65,7 +65,7 @@ const VideoPlayer = ({ zipFile }) => {
 
                 setTextData(data);
                 setDisplayedText([]);
-                videoRef.current.src = URL.createObjectURL(mp4File);
+                videoRef.current.src = URL.createObjectURL(videoFile);
 
                 videoRef.current.addEventListener('loadedmetadata', () => {
                     if (playing) {
@@ -120,7 +120,7 @@ const VideoPlayer = ({ zipFile }) => {
                         className="w-full"
                     />
                 </div>
-                <div className="ml-4">{currentTime.toFixed(2)}</div>
+                <div className="ml-4">{currentTime.toFixed(1)}</div>
             </div>
             <div ref={textContainerRef} className="mt-4 overflow-y-scroll max-h-200 border-2 border-gray-300 p-4 rounded-md">
                 {displayedText.map((item, index) => (

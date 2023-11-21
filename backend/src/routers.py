@@ -1,4 +1,5 @@
 import aiofiles
+from aiofiles import os
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
 
 from src.utils import yolo_processing, yt_download_tmp
@@ -32,7 +33,7 @@ async def yolo(file: UploadFile = File(...)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="There was an error processing the file"
         )
     finally:
-        await aiofiles.os.remove(temp.name)
+        await os.remove(temp.name)
 
     return res
 

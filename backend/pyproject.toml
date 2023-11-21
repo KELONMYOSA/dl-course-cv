@@ -12,6 +12,8 @@ fastapi = "^0.104.1"
 aiofiles = "^23.2.1"
 python-multipart = "^0.0.6"
 pytube = "^15.0.0"
+ultralytics = "^8.0.215"
+opencv-python = "^4.8.1.78"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.1.5"

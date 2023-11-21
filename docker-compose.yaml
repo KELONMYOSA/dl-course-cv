@@ -15,6 +15,13 @@ services:
     restart: unless-stopped
     networks:
       - dl-course-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
 
   frontend:
     container_name: frontend-react

@@ -1,26 +1,24 @@
+import tempfile
+import uuid
 import zipfile
 from io import BytesIO
+from os import path
 
 import aiofiles
 from aiofiles import os
 from fastapi.responses import StreamingResponse
 from pytube import YouTube
 
+from src.yolo import predict_video
+
 
 async def yolo_processing(file_path: str):
-    # Video process
-    async with aiofiles.tempfile.NamedTemporaryFile("wb", delete=False) as temp_video:
-        async with aiofiles.open(file_path, mode="rb") as file:
-            contents = await file.read()
-            await temp_video.write(contents)
+    temp_video = path.join(tempfile.gettempdir(), f"{uuid.uuid1()!s}.webm")
+    async with aiofiles.tempfile.NamedTemporaryFile("w", delete=False, encoding="utf-8") as temp_csv:
+        await predict_video(file_path, temp_video, temp_csv)
 
-    # CSV process
-    async with aiofiles.tempfile.NamedTemporaryFile("w", delete=False) as temp_csv:
-        await temp_csv.write("0.56, Stop\n")
-        await temp_csv.write("3.23, Speed limit\n")
-
-    zip_result = zipfiles(temp_video.name, temp_csv.name)
-    await os.remove(temp_video.name)
+    zip_result = zipfiles(temp_video, temp_csv.name)
+    await os.remove(temp_video)
     await os.remove(temp_csv.name)
 
     return zip_result
@@ -29,7 +27,7 @@ async def yolo_processing(file_path: str):
 def zipfiles(f_video: str, f_csv: str):
     zip_io = BytesIO()
     with zipfile.ZipFile(zip_io, mode="w", compression=zipfile.ZIP_DEFLATED) as temp_zip:
-        temp_zip.write(f_video, "video.mp4")
+        temp_zip.write(f_video, "video.webm")
         temp_zip.write(f_csv, "data.csv")
 
     return StreamingResponse(
