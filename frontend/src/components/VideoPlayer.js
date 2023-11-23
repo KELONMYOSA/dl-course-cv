@@ -10,6 +10,19 @@ const VideoPlayer = ({ zipFile }) => {
     const textContainerRef = useRef();
     const progressBarRef = useRef();
 
+    const signLabels = [
+        "Предупреждающие",
+        "Приоритета",
+        "Запрещающие",
+        "Предписывающие",
+        "Особых предписаний",
+        "Информационные",
+        "Сервиса",
+        "Дополнительные"
+    ];
+
+    const [signsData, setSignsData] = useState(Array.from({ length: 8 }, () => ('none')));
+
     const handlePlay = () => {
         if (videoRef.current.paused || videoRef.current.ended) {
             videoRef.current.play().catch((error) => console.error(error));
@@ -28,6 +41,27 @@ const VideoPlayer = ({ zipFile }) => {
         newDisplayedText.sort((a, b) => b.timestamp - a.timestamp);
 
         setDisplayedText(newDisplayedText);
+
+        const newDisplayedTextReverse = newDisplayedText.slice(0);
+        newDisplayedTextReverse.sort((a, b) => a.timestamp - b.timestamp);
+
+        const currentSignsData = newDisplayedTextReverse.map((item) => {
+            return item.code
+        });
+
+        setSignsData(() => {
+            const updatedSignsData = Array.from({ length: 8 }, () => ('none'));
+
+            for (const sign of currentSignsData) {
+                const cellIndex = parseInt(sign.split('_')[0]) - 1;
+
+                if (!isNaN(cellIndex) && cellIndex >= 0 && cellIndex < updatedSignsData.length) {
+                    updatedSignsData[cellIndex] = sign;
+                }
+            }
+
+            return updatedSignsData;
+        });
 
         textContainerRef.current.scrollTop = textContainerRef.current.scrollHeight;
 
@@ -59,8 +93,11 @@ const VideoPlayer = ({ zipFile }) => {
 
                 const lines = csvFile.split('\n');
                 const data = lines.map((line) => {
-                    const [timestamp, text] = line.split(',');
-                    return { timestamp: parseFloat(timestamp), text };
+                    const lineSplit = line.split(',');
+                    const timestamp = lineSplit[0];
+                    const code = lineSplit[1];
+                    const text = lineSplit[3];
+                    return { timestamp: parseFloat(timestamp), code, text };
                 });
 
                 setTextData(data);
@@ -121,6 +158,14 @@ const VideoPlayer = ({ zipFile }) => {
                     />
                 </div>
                 <div className="ml-4">{currentTime.toFixed(1)}</div>
+            </div>
+            <div className="grid grid-rows-2 grid-cols-4 gap-4 mt-4">
+                {signsData.map((sign, index) => (
+                    <div key={index} className="flex flex-col items-center bg-white shadow-md rounded-md">
+                        <p className="text-center mb-2">{signLabels[index]}</p>
+                        <img src={`assets/images/signs/${sign}.svg`} alt={`Sign ${sign}`} className="w-16 h-16 object-contain" />
+                    </div>
+                ))}
             </div>
             <div ref={textContainerRef} className="mt-4 overflow-y-scroll max-h-200 border-2 border-gray-300 p-4 rounded-md">
                 {displayedText.map((item, index) => (
