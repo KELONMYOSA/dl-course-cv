@@ -61,7 +61,7 @@ async def predict_video(input_video_path: str, out_video_path: str, logs_file, p
             for i in range(detection_count):
                 cls = int(res.boxes.cls[i].item())
                 name = res.names[cls]
-                if name in signs_map:
+                if name in signs_map and name in priority_map and name in text_info_map:
                     await logs_file.write(
                         f"{round(frame_count / video_fps, 1)},{name},{signs_map[name]},"
                         f"{text_info_map[name]},{priority_flag(name)}\n"

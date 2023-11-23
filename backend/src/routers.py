@@ -10,7 +10,7 @@ router = APIRouter()
 # Yolo video processing
 @router.post("/video/yolo", tags=["Video"])
 async def yolo(file: UploadFile = File(...)):
-    if not file.filename.endswith(".mp4"):
+    if not (file.filename.endswith(".mp4") or file.filename.endswith(".MP4")):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="There was an error with the file extension"
         )
