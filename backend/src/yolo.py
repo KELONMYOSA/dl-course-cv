@@ -31,7 +31,9 @@ def priority_flag(sign_name: str) -> int:
         return 0
 
 
-async def predict_video(input_video_path: str, out_video_path: str, logs_file, frames_in_row: int = 10):
+async def predict_video(
+    input_video_path: str, out_video_path: str, logs_file, frames_in_row: int = 10, frame_slip: int = 5
+):
     tmp_dir = tempfile.gettempdir()
     cap = cv2.VideoCapture(input_video_path)
 
@@ -41,6 +43,7 @@ async def predict_video(input_video_path: str, out_video_path: str, logs_file, f
 
     frame_count = 0
     detected_signs = {}
+    shown_signs = {}
 
     while cap.isOpened():
         ret, frame = cap.read()
@@ -65,13 +68,22 @@ async def predict_video(input_video_path: str, out_video_path: str, logs_file, f
 
         del_keys = set(detected_signs) - set(names)
         for del_key in del_keys:
-            del detected_signs[del_key]
+            if del_key in shown_signs:
+                shown_signs[del_key] += 1
+            else:
+                shown_signs[del_key] = 1
+
+            if shown_signs[del_key] > frame_slip:
+                del detected_signs[del_key]
+                del shown_signs[del_key]
 
         for name in names:
             if name in detected_signs:
                 detected_signs[name] += 1
             else:
                 detected_signs[name] = 1
+
+            shown_signs.pop(name, None)
 
             if detected_signs[name] == frames_in_row:
                 if name in signs_map and name in text_info_map:
