@@ -19,3 +19,6 @@ faster-rcnn | 2         | 5ч   | SGD       | 0.0005 | 0.9       | -   | 0.53
 faster-rcnn | 2         | 5ч   | SGD       | 0.001  | 0.9       | -   | 0.56
 faster-rcnn | 4         | 10ч  | SGD       | 0.001  | 0.9       | -   | 0.55
 faster-rcnn | 2         | 5ч   | Adam      | 0.001  | 0.9       | -   | 0.00
+
+### Web UI
+![Web UI - GIF](assets/web-ui.gif)
