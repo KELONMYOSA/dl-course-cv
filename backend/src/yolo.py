@@ -1,6 +1,5 @@
 import json
 import logging
-import math
 import tempfile
 import uuid
 from os import path
@@ -21,7 +20,7 @@ with open("storage/maps/high_priority_mapping.json") as json_file:
 
 
 def _predict_img(path: str):
-    result = model(path, conf=0.5)
+    result = model(path, conf=0.5, imgsz=1280)
     return result[0]
 
 
@@ -32,7 +31,7 @@ def priority_flag(sign_name: str) -> int:
         return 0
 
 
-async def predict_video(input_video_path: str, out_video_path: str, logs_file, per_second: int = 1):
+async def predict_video(input_video_path: str, out_video_path: str, logs_file, frames_in_row: int = 10):
     tmp_dir = tempfile.gettempdir()
     cap = cv2.VideoCapture(input_video_path)
 
@@ -41,7 +40,7 @@ async def predict_video(input_video_path: str, out_video_path: str, logs_file, p
     out_video_frames = []
 
     frame_count = 0
-    frame_interval = math.ceil(video_fps / per_second)
+    detected_signs = {}
 
     while cap.isOpened():
         ret, frame = cap.read()
@@ -51,25 +50,35 @@ async def predict_video(input_video_path: str, out_video_path: str, logs_file, p
 
         frame_count += 1
 
-        if frame_count % frame_interval == 0:
-            tmp_frame_img = path.join(tmp_dir, f"{uuid.uuid1()!s}.jpg")
-            cv2.imwrite(tmp_frame_img, frame)
-            res = _predict_img(tmp_frame_img)
-            await os.remove(tmp_frame_img)
+        tmp_frame_img = path.join(tmp_dir, f"{uuid.uuid1()!s}.jpg")
+        cv2.imwrite(tmp_frame_img, frame)
+        res = _predict_img(tmp_frame_img)
+        await os.remove(tmp_frame_img)
 
-            detection_count = res.boxes.shape[0]
-            for i in range(detection_count):
-                cls = int(res.boxes.cls[i].item())
-                name = res.names[cls]
-                if name in signs_map and name in priority_map and name in text_info_map:
+        out_video_frames.append(res.plot())
+
+        names = []
+        detection_count = res.boxes.shape[0]
+        for i in range(detection_count):
+            cls = int(res.boxes.cls[i].item())
+            names.append(res.names[cls])
+
+        del_keys = set(detected_signs) - set(names)
+        for del_key in del_keys:
+            del detected_signs[del_key]
+
+        for name in names:
+            if name in detected_signs:
+                detected_signs[name] += 1
+            else:
+                detected_signs[name] = 1
+
+            if detected_signs[name] == frames_in_row:
+                if name in signs_map and name in text_info_map:
                     await logs_file.write(
-                        f"{round(frame_count / video_fps, 1)},{name},{signs_map[name]},"
+                        f"{round(frame_count / video_fps, 2)},{name},{signs_map[name]},"
                         f"{text_info_map[name]},{priority_flag(name)}\n"
                     )
-
-            out_video_frames.append(res.plot())
-        else:
-            out_video_frames.append(frame)
 
     cap.release()
 
